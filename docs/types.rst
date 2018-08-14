@@ -988,7 +988,7 @@ is possible if it
 makes sense semantically and no information is lost: ``uint8`` is convertible to
 ``uint16`` and ``int128`` to ``int256``, but ``int8`` is not convertible to ``uint256``
 (because ``uint256`` cannot hold e.g. ``-1``).
-Any type that can be converted to ``uint160`` can also be converted to ``address``.
+Any integer type that can be converted to ``uint160`` can also be converted to ``address``.
 
 Explicit Conversions
 --------------------
@@ -1013,14 +1013,14 @@ cut off::
     uint32 a = 0x12345678;
     uint16 b = uint16(a); // b will be 0x5678 now
 
-If an integer is explicitly converted to a larger type, it is padded on the left.
+If an integer is explicitly converted to a larger type, it is padded on the left (i.e. at the higher order end).
 The result of the conversion will compare equal to the original integer.
 
     uint16 a = 0x1234;
     uint32 b = uint32(a); // b will be 0x00001234 now
-    bool c = (a == b); // will be true
+    assert(a == b);
 
-Fixed-size bytes types behave differently during casts. They can be thought of as
+Fixed-size bytes types behave differently during conversions. They can be thought of as
 sequences of individual bytes and converting to a smaller type will cut off the
 sequence::
 
@@ -1029,17 +1029,18 @@ sequence::
 
 If a fixed-size bytes type is explicitly converted to a larger type, it is padded on
 the right. Accessing the byte at a fixed index will result in the same value before and
-after the conversion::
+after the conversion (if the index is still in range)::
 
     bytes2 a = 0x1234;
     bytes4 b = bytes4(a); // b will be 0x12340000
-    bool c = (a[0] == b[0]) && (a[1] == b[1]); // will be true
+    assert(a[0] == b[0]);
+    assert(a[1] == b[1]);
 
-Since the convention for truncation and padding for integer types is the opposite of the
-convention for fixed-size byte arrays, since 0.5.0 explicit conversions between integers and
-fixed-size byte arrays are only allowed, if both have the same size. If you want to convert
-between integers and fixed-size bytes of different size, you have to use intermediate casts that
-make the truncation and padding convention explicit::
+Since integers and fixed-size byte arrays behave differently when truncating or
+padding, explicit conversions between integers and fixed-size byte arrays are only allowed,
+if both have the same size. If you want to convert between integers and fixed-size byte arrays of
+different size, you have to use intermediate conversions that make the desired truncation and padding
+rules explicit::
 
     bytes2 a = 0x1234;
     uint32 b = uint16(a); // b will be 0x00001234
@@ -1087,3 +1088,9 @@ if their number of characters matches the size of the bytes type::
     bytes2 d = hex"123"; // not allowed
     bytes2 e = "x"; // not allowed
     bytes2 f = "xyz"; // not allowed
+
+Addresses
+---------
+
+As described in :ref:`address_literals`, hex literals of the correct size that pass the checksum
+test are of ``address`` type. No other literals can be implicitly converted to the ``address`` type.
